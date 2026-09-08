@@ -617,7 +617,11 @@ class ExpansionPlanningSolution:
         # can select which one to use by setting up the plot_type
         # option.
         def plotly_treemap_gen_mix(
-            gen_mix, gen_types, results_path, case_json, small_pct_threshold=5,
+            gen_mix,
+            gen_types,
+            results_path,
+            case_json,
+            small_pct_threshold=5,
         ):
             """This function creates interactive Plotly treemap plots
             of generation mix.
