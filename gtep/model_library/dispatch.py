@@ -24,7 +24,7 @@ import gtep.model_library.storage as stor
 import gtep.model_library.transmission as transm
 
 
-def add_dispatch_variables(b):
+def add_dispatch_variables(b, paramPeriodLength):
     """This method adds dispatch-associated variables to
     representative period block.
 
@@ -61,8 +61,18 @@ def add_dispatch_variables(b):
     def thermalGeneratorCost(b, gen):
         return (
             b.thermalGeneration[gen]
-            * pyo.units.convert(paramPeriodLength, to_units=u.hr)
+            * u.convert(paramPeriodLength, to_units=u.hr)
             * (m.varCost[gen] + m.fuelCost[gen])
+        )
+
+    @b.Expression(m.renewableGenerators, doc="Cost per renewable generator in $")
+    def renewableGeneratorCost(b, gen):
+        m = b.model()
+
+        return (
+            b.renewableGeneration[gen]
+            * u.convert(paramPeriodLength, to_units=u.hr)
+            * m.varCost[gen]
         )
 
     if m.config["storage"]:
@@ -76,7 +86,7 @@ def add_dispatch_variables(b):
         def hydroGeneratorCost(b, hydroGen):
             return (
                 b.hydroGeneration[hydroGen]
-                * pyo.units.convert(paramPeriodLength, to_units=u.hr)
+                * u.convert(paramPeriodLength, to_units=u.hr)
                 * m.varCost[hydroGen]
             )
 
@@ -92,7 +102,11 @@ def add_dispatch_variables(b):
 
         @b.Expression(m.thermalGenerators, doc="Reactive power cost per generator")
         def reactiveGeneratorCost(b, gen):
-            return b.thermalReactiveGeneration[gen] * m.fuelCost[gen]
+            return (
+                b.thermalReactiveGeneration[gen]
+                * u.convert(paramPeriodLength, to_units=u.hr)
+                * m.fuelCostReactive[gen]
+            )
 
     b.loadShed = pyo.Var(
         m.buses,
@@ -106,7 +120,7 @@ def add_dispatch_variables(b):
     def loadShedCost(b, bus):
         return (
             b.loadShed[bus]
-            * pyo.units.convert(paramPeriodLength, to_units=u.hr)
+            * u.convert(paramPeriodLength, to_units=u.hr)
             * m.loadShedCostperCurtailment  # $/MWh
         )
 
@@ -136,10 +150,27 @@ def add_dispatch_variables(b):
         return sum(b.renewableGeneratorCost[gen] for gen in m.renewableGenerators)
 
     # Reactive generation cost
+    total_reactive_cost_doc = "Total cost for reactive power generation in $"
     if m.config["flow_model"] == "ACR" or m.config["flow_model"] == "ACP":
-        b.reactiveGenerationCostDispatch = sum(b.reactiveGeneratorCost.values())
+
+        @b.Expression(m.thermalGenerators, doc="Reactive power cost per generator")
+        def reactiveGeneratorCost(b, gen):
+            m = b.model()
+            return (
+                b.thermalReactiveGeneration[gen]
+                * u.convert(paramPeriodLength, to_units=u.hr)
+                * m.fuelCostReactive[gen]
+            )
+
+        @b.Expression(doc=total_reactive_cost_doc)
+        def reactiveGenerationCostDispatch(b):
+            return sum(b.reactiveGeneratorCost.values())
+
     else:
-        b.reactiveGenerationCostDispatch = 0
+
+        @b.Expression(doc=total_reactive_cost_doc)
+        def reactiveGenerationCostDispatch(b):
+            return 0 * u.USD
 
     @b.Expression()
     def loadShedCostDispatch(b):
@@ -295,72 +326,21 @@ def add_dispatch_constraints(b):
             balance += b.loadShed[bus]
             return balance == 0 * u.MW
 
-    # print(f"{pyo.value(sum(m.loads[n] for n in m.loads)) = }")
-
-    # # NOTE: In comparison to reference [1], this is "per renewable
-    # # generator". [TODO: Should we include charging costs from
-    # # non-colocated plants?]
-    # @b.Constraint(m.renewableGenerators, doc="Capacity factor constraint")
-    # def capacity_factor(b, renewableGen):
-    #     return (
-    #         b.renewableGeneration[renewableGen] + b.renewableCurtailment[renewableGen]
-    #         == c_p.renewableCapacityExpected[renewableGen]
-    #     )
-
     @b.Constraint(m.renewableGenerators, doc="Capacity factor constraint")
     def capacity_factor(b, renewableGen):
-        is_candidate = str(renewableGen).endswith("-c")
 
-        # If investment is disabled, candidate renewable generators
-        # should not generate or curtail.
-        if not m.config["include_investment"] and is_candidate:
+        # If investment is disabled, keep the original equation for
+        # existing renewables and force candidate renewables to zero.
+        if not m.config["include_investment"] and str(renewableGen).endswith("-c"):
             return (
                 b.renewableGeneration[renewableGen]
                 + b.renewableCurtailment[renewableGen]
                 == 0 * u.MW
             )
-
-        expected_mw = pyo.value(
-            pyo.units.convert(
-                c_p.renewableCapacityExpected[renewableGen],
-                to_units=u.MW,
-            )
-        )
-
-        nameplate_mw = pyo.value(
-            pyo.units.convert(
-                m.renewableCapacityNameplate[renewableGen],
-                to_units=u.MW,
-            )
-        )
-
-        # Avoid division by zero. If nameplate is zero, the renewable
-        # generator has no available capacity in this formulation.
-        if abs(nameplate_mw) <= 1e-9:
-            if abs(expected_mw) > 1e-9:
-                raise ValueError(
-                    f"Renewable generator {renewableGen} has zero nameplate "
-                    f"capacity but nonzero expected renewable output "
-                    f"({expected_mw} MW). Please check input data."
-                )
-
-            return (
-                b.renewableGeneration[renewableGen]
-                + b.renewableCurtailment[renewableGen]
-                == 0 * u.MW
-            )
-
-        availability_factor = expected_mw / nameplate_mw
-
-        active_capacity = (
-            i_p.renewableOperational[renewableGen]
-            + i_p.renewableInstalled[renewableGen]
-            + i_p.renewableExtended[renewableGen]
-        )
 
         return (
             b.renewableGeneration[renewableGen] + b.renewableCurtailment[renewableGen]
-            == availability_factor * active_capacity
+            <= c_p.renewableCapacityExpected[renewableGen]
         )
 
     # [TODO: Add renewableExtended to this and anywhere else.]
