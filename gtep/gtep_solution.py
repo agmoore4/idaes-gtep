@@ -398,7 +398,7 @@ class ExpansionPlanningSolution:
         for var in m.component_objects(gdp.Disjunct, descend_into=True):
             for index in var:
                 for name in valid_names:
-                    if name in var.name and "storage" not in var.name:
+                    if name in var.name and "stor" not in var.name:
                         if pyo.value(var[index].indicator_var) == True:
                             dispatchable_investments[var.name + "." + str(index)] = (
                                 pyo.value(var[index].indicator_var)
@@ -927,7 +927,7 @@ class ExpansionPlanningSolution:
                 commitment_dict[dispatch] = dict.fromkeys(GEN_TYPES, 0)
             dispatch_dict = commitment_dict[dispatch]
 
-            dispatch_dict["battery_charge"] -= val
+            dispatch_dict["BATTERY"] -= val
 
         # Add battery discharging data to generation structure
         # Per request, plot discharge as negative (below x-axis)
@@ -953,7 +953,7 @@ class ExpansionPlanningSolution:
                 commitment_dict[dispatch] = dict.fromkeys(GEN_TYPES, 0)
             dispatch_dict = commitment_dict[dispatch]
 
-            dispatch_dict["battery_discharge"] += val
+            dispatch_dict["BATTERY"] += val
 
         total_charging = sum(charging_data.values())
         total_discharging = sum(discharging_data.values())
