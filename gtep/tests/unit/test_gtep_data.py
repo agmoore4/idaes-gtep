@@ -335,10 +335,10 @@ class TestExpansionPlanningData(unittest.TestCase):
         testObject.load_prescient(data_source_123)
         testObject.load_storage_csv(data_source_123)
 
-    #     # Storage should be set to empty dict
-    #     storage = testObject.md.data["elements"].get("storage", None)
-    #     self.assertIsInstance(storage, dict)
-    #     self.assertEqual(storage, {})
+        # Storage should be set to empty dict
+        storage = testObject.md.data["elements"].get("storage", None)
+        self.assertIsInstance(storage, dict)
+        self.assertEqual(storage, {})
 
     def test_texas_case_study(self):
         testObject = ExpansionPlanningData()
