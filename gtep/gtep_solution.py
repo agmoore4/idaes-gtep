@@ -640,6 +640,7 @@ class ExpansionPlanningSolution:
             :param small_pct_threshold: Minimum percentage used for
                                         displaying labels. Defaults to
                                         5.
+
             """
 
             for tp, mix in gen_mix.items():
