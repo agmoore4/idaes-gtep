@@ -98,8 +98,7 @@ class ExpansionPlanningSolution:
             "OTHER": GenerationType("Other", other),
         }
         gen_types_candidate = {
-            unit
-            + "-c": GenerationType(
+            unit + "-c": GenerationType(
                 gentype.label + " Candidate", darken_color(gentype.color)
             )
             for unit, gentype in self.gen_types.items()
@@ -453,9 +452,7 @@ class ExpansionPlanningSolution:
         for name in output_files:
             logger.info(f" - {folder_name}/{name}.json")
 
-    def create_plots(
-        self, case_json, results_path, data_path, plot_type="all", savefig=True
-    ):
+    def create_plots(self, case_json, results_path, data_path, plot_type="all", savefig=True):
         """This method creates generation-mix plots from saved
         solution JSON files. These plots visualize the total amount
         of generation capacity available based on investment decisions.
@@ -489,9 +486,7 @@ class ExpansionPlanningSolution:
             plots_dir = os.path.join(results_path, "plots")
             if not os.path.exists(plots_dir):
                 os.makedirs(plots_dir)
-                logger.info(
-                    f"\nCreated the subdirectory '{plots_dir}' to save the plots."
-                )
+                print(f"\nCreated the subdirectory '{plots_dir}' to save the plots.")
 
         def get_gen_arrays(gen_case_json, results_path, data_path, gen_types):
             """This function builds generation-mix dictionaries used
@@ -795,21 +790,20 @@ class ExpansionPlanningSolution:
 
         figs, fnames = [], []
         if plot_type in ("treemap", "all"):
-            fig, fname = plotly_treemap_gen_mix(
-                gen_mix, self.gen_types, results_path, case_json
-            )
+            fig, fname = plotly_treemap_gen_mix(gen_mix, self.gen_types, results_path, case_json)
             figs.append(fig), fnames.append(fname)
-        if plot_type in ("piechart", "all"):
-            fig, fname = plotly_pie_gen_mix(
-                gen_mix, self.gen_types, results_path, case_json
-            )
+        elif plot_type in ("piechart", "all"):
+            fig, fname = plotly_pie_gen_mix(gen_mix, self.gen_types, results_path, case_json)
             figs.append(fig), fnames.append(fname)
-
+        else:
+            raise ValueError(
+                f"Plot type '{plot_type}' is not supported. Please choose between 'treemap' or 'piechart'."
+            )
+        
         if savefig:
             for fig, fname in zip(figs, fnames):
                 fig.write_html(fname)
-                logger.info(f" -> Saved to {fname}")
-
+                print(f" -> Saved to {fname}")
         return figs[0] if len(figs) == 1 else figs
 
     def create_stackgraph(self, results_path, rep_days, savefig=True):
@@ -851,11 +845,9 @@ class ExpansionPlanningSolution:
         }
 
         gen_uid_to_type = {
-            row["GEN UID"]: (
-                row["Unit Type"].upper() + "-c"
-                if row["GEN UID"].endswith("-c")
-                else row["Unit Type"].upper()
-            )
+            row["GEN UID"]: row["Unit Type"].upper() + "-c"
+            if row["GEN UID"].endswith("-c")
+            else row["Unit Type"].upper()
             for _, row in self.gen_df.iterrows()
         }
         missing_unit_types = [
@@ -1203,5 +1195,5 @@ class ExpansionPlanningSolution:
         if savefig:
             plot_path = f"{results_path}/plots/stackgraph_generators.html"
             fig.write_html(f"{plot_path}")
-            logger.info(f" -> Saved interactive stackgraph to {plot_path}")
+            print(f" -> Saved interactive stackgraph to {plot_path}")
         return fig
