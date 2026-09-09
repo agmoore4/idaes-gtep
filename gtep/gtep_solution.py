@@ -489,7 +489,9 @@ class ExpansionPlanningSolution:
             plots_dir = os.path.join(results_path, "plots")
             if not os.path.exists(plots_dir):
                 os.makedirs(plots_dir)
-                print(f"\nCreated the subdirectory '{plots_dir}' to save the plots.")
+                logger.info(
+                    f"\nCreated the subdirectory '{plots_dir}' to save the plots."
+                )
 
         def get_gen_arrays(gen_case_json, results_path, data_path, gen_types):
             """This function builds generation-mix dictionaries used
@@ -797,20 +799,17 @@ class ExpansionPlanningSolution:
                 gen_mix, self.gen_types, results_path, case_json
             )
             figs.append(fig), fnames.append(fname)
-        elif plot_type in ("piechart", "all"):
+        if plot_type in ("piechart", "all"):
             fig, fname = plotly_pie_gen_mix(
                 gen_mix, self.gen_types, results_path, case_json
             )
             figs.append(fig), fnames.append(fname)
-        else:
-            raise ValueError(
-                f"Plot type '{plot_type}' is not supported. Please choose between 'treemap' or 'piechart'."
-            )
 
         if savefig:
             for fig, fname in zip(figs, fnames):
                 fig.write_html(fname)
-                print(f" -> Saved to {fname}")
+                logger.info(f" -> Saved to {fname}")
+
         return figs[0] if len(figs) == 1 else figs
 
     def create_stackgraph(self, results_path, rep_days, savefig=True):
@@ -1204,5 +1203,5 @@ class ExpansionPlanningSolution:
         if savefig:
             plot_path = f"{results_path}/plots/stackgraph_generators.html"
             fig.write_html(f"{plot_path}")
-            print(f" -> Saved interactive stackgraph to {plot_path}")
+            logger.info(f" -> Saved interactive stackgraph to {plot_path}")
         return fig
