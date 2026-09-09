@@ -1,0 +1,5 @@
+# to stop plotly markdown from causing spell check to fail
+[default]
+extend-ignore-re = [
+    '''"bdata":"(?:\\.|[^"\\])*"'''
+]
