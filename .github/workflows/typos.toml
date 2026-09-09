@@ -29,5 +29,5 @@ extend-ignore-re = [
     "ser[.].*",
     # Plotly serializes data when converting to markdown, which is appearing in
     # cell outputs and causing spell check to fail. Ignore binary data:
-    '''\"bdata\":\"[^"]*\"'''
+    '''\\"bdata\\":\\"[^"]*\\\"'''
 ]
