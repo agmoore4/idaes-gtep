@@ -617,7 +617,11 @@ class ExpansionPlanningSolution:
         # can select which one to use by setting up the plot_type
         # option.
         def plotly_treemap_gen_mix(
-            gen_mix, gen_types, results_path, case_json, small_pct_threshold=5
+            gen_mix,
+            gen_types,
+            results_path,
+            case_json,
+            small_pct_threshold=5,
         ):
             """This function creates interactive Plotly treemap plots
             of generation mix.
@@ -923,7 +927,7 @@ class ExpansionPlanningSolution:
                 commitment_dict[dispatch] = dict.fromkeys(GEN_TYPES, 0)
             dispatch_dict = commitment_dict[dispatch]
 
-            dispatch_dict["battery_charge"] -= val
+            dispatch_dict["BATTERY"] -= val
 
         # Add battery discharging data to generation structure
         # Per request, plot discharge as negative (below x-axis)
@@ -949,7 +953,7 @@ class ExpansionPlanningSolution:
                 commitment_dict[dispatch] = dict.fromkeys(GEN_TYPES, 0)
             dispatch_dict = commitment_dict[dispatch]
 
-            dispatch_dict["battery_discharge"] += val
+            dispatch_dict["BATTERY"] += val
 
         total_charging = sum(charging_data.values())
         total_discharging = sum(discharging_data.values())
