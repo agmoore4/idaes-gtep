@@ -304,9 +304,9 @@ class ExpansionPlanningData:
                     + f" but got {total_weight}"
                 )
 
-            print(
+            logger.info(
                 (
-                    "INFO: representative_dates and representative_weights are aligned."
+                    "representative_dates and representative_weights are aligned. "
                     + "Continue building the data modeling object..."
                 )
             )
